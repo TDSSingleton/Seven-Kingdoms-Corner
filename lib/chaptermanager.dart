@@ -9,8 +9,10 @@ import 'package:zefyrka/zefyrka.dart';
 import 'dart:convert';
 import 'package:path/path.dart' as filepath;
 
-class CompendiumManager extends StatefulWidget {
-  const CompendiumManager(
+import 'campaignclasses.dart';
+
+class CampaignManager extends StatefulWidget {
+  const CampaignManager(
       {Key? key, required this.gamePath, required this.gameID})
       : super(key: key);
 
@@ -23,15 +25,15 @@ class CompendiumManager extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-  final String title = "Compendium Manager";
+  final String title = "Campaign Manager";
   final String gamePath;
   final String gameID;
 
   @override
-  State<CompendiumManager> createState() => _CompendiumManager(gamePath);
+  State<CampaignManager> createState() => _CampaignManager(gamePath);
 }
 
-class _CompendiumManager extends State<CompendiumManager> {
+class _CampaignManager extends State<CampaignManager> {
   //Controllers
   ZefyrController _zController = ZefyrController();
   final TextEditingController _temporaryTextCont = TextEditingController();
@@ -41,13 +43,15 @@ class _CompendiumManager extends State<CompendiumManager> {
   int _selectedIndexColumns = -1;
   int _selectedIndexArticle = -1;
   //Misc data & Saved stuff
-  String dropdownValue = 'None';
   String _currentCategoryString = "";
-  CompendiumHolder compendiumHolder = CompendiumHolder();
+  String _campaignTitle = "OWS";
+  String gPath = "";
+  Campaign campaignHolder = Campaign();
 
-  _CompendiumManager(String gamePath) {
+  _CampaignManager(String gamePath) {
+    gPath = gamePath;
     _setZcontrollerEvent();
-    compendiumHolder = _setCompendiumData(gamePath);
+    _setCampaignData();
   }
 
   Widget build(BuildContext context) {
@@ -58,6 +62,24 @@ class _CompendiumManager extends State<CompendiumManager> {
           actions: [
             Padding(
               padding: EdgeInsets.only(right: 20.0),
+              child: SizedBox(
+                width: 60,
+                height: 15,
+                child: DropdownButtonFormField(
+                  value: _campaignTitle,
+                  items: _getCampaigns(),
+                  onChanged: (String? val) {
+                    _temporaryTextCont.text = val!;
+                    Helpers.displayAlertDialogue(
+                        context, _SaveThenLoadOtherJSON,
+                        textTitle:
+                            "Would you like to save the contents before switching?");
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(right: 20.0),
               child: IconButton(
                 icon: const Icon(Icons.save),
                 iconSize: 26.0,
@@ -65,7 +87,7 @@ class _CompendiumManager extends State<CompendiumManager> {
                   _saveJSON();
                 },
               ),
-            ),
+            )
           ],
         ),
         body: _generateBody());
@@ -82,14 +104,14 @@ class _CompendiumManager extends State<CompendiumManager> {
               children: [
                 Column(
                   children: [
-                    SizedBox(
+                    const SizedBox(
                         width: 450,
                         child: Text(
-                          "Main Categories",
+                          "Nations",
                           textAlign: TextAlign.left,
                           textScaleFactor: 1.5,
                         )),
-                    SizedBox(
+                    const SizedBox(
                       height: 10,
                     ),
                     SizedBox(
@@ -98,19 +120,19 @@ class _CompendiumManager extends State<CompendiumManager> {
                       child: Container(
                         color: Colors.black26,
                         child: ListView.builder(
-                            itemCount: compendiumHolder.mainCategories.length,
+                            itemCount: campaignHolder.nationNames.length,
                             scrollDirection: Axis.vertical,
                             controller: ScrollController(),
                             itemBuilder: (context, index) => ListTile(
-                                  title: Text(
-                                      compendiumHolder.mainCategories[index]),
+                                  title:
+                                      Text(campaignHolder.nationNames[index]),
                                   selected: _selectedIndexColumns == index,
                                   onTap: () {
                                     setState(() {
                                       _selectedIndexColumns = index;
                                       _selectedIndexArticle = -1;
-                                      var textIndex = compendiumHolder
-                                          .mainCategories[index];
+                                      var textIndex =
+                                          campaignHolder.nationNames[index];
                                       _currentCategoryString = "in $textIndex";
                                     });
                                   },
@@ -118,12 +140,12 @@ class _CompendiumManager extends State<CompendiumManager> {
                                     Helpers.displayAlertDialogueNumPass(
                                         context, removeCategory, index,
                                         textTitle:
-                                            "Are you sure you want to remove this category?");
+                                            "Are you sure you want to remove this Nation?");
                                   },
                                 )),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 10,
                     ),
                     SizedBox(
@@ -137,10 +159,10 @@ class _CompendiumManager extends State<CompendiumManager> {
                                 _temporaryTextCont.text = "";
                                 Helpers.displayTextInputDialog(
                                     context, _temporaryTextCont, createCategory,
-                                    textTitle: "New main category");
+                                    textTitle: "New Nation");
                               });
                             },
-                            child: const Text("Add new Category"),
+                            child: const Text("Add new Nation"),
                           )),
                     ),
                     const SizedBox(
@@ -153,11 +175,11 @@ class _CompendiumManager extends State<CompendiumManager> {
                     SizedBox(
                         width: 450,
                         child: Text(
-                          "Articles $_currentCategoryString",
+                          "Maps $_currentCategoryString",
                           textAlign: TextAlign.left,
                           textScaleFactor: 1.5,
                         )),
-                    SizedBox(
+                    const SizedBox(
                       height: 10,
                     ),
                     SizedBox(
@@ -168,7 +190,7 @@ class _CompendiumManager extends State<CompendiumManager> {
                         child: _generateArticlesFlexview(),
                       ),
                     ),
-                    SizedBox(
+                    const SizedBox(
                       height: 10,
                     ),
                     SizedBox(
@@ -181,9 +203,9 @@ class _CompendiumManager extends State<CompendiumManager> {
                               _temporaryTextCont.text = "";
                               Helpers.displayTextInputDialog(
                                   context, _temporaryTextCont, _createArticle,
-                                  textTitle: "New article");
+                                  textTitle: "New map");
                             },
-                            child: Text("Add new Article"),
+                            child: const Text("Add new Map"),
                           )),
                     )
                   ],
@@ -201,7 +223,7 @@ class _CompendiumManager extends State<CompendiumManager> {
                   width: 450,
                   child: Column(
                     children: [
-                      Align(
+                      const Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
                             "Title",
@@ -213,13 +235,13 @@ class _CompendiumManager extends State<CompendiumManager> {
                         controller: _titleController,
                         onChanged: (val) {
                           if (_selectedIndexArticle < 0) return;
-                          setState(() => compendiumHolder
-                              .subCategories[_selectedIndexColumns]
-                              .categoryArticles[_selectedIndexArticle]
+                          setState(() => campaignHolder
+                              .maps[_selectedIndexColumns]
+                              .nationMaps[_selectedIndexArticle]
                               .title = val);
                         },
                       )),
-                      SizedBox(
+                      const SizedBox(
                         height: 10,
                       )
                     ],
@@ -233,7 +255,7 @@ class _CompendiumManager extends State<CompendiumManager> {
                       Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            "Subtitle",
+                            "Map ID",
                             textAlign: TextAlign.left,
                             textScaleFactor: 1.5,
                           )),
@@ -242,10 +264,10 @@ class _CompendiumManager extends State<CompendiumManager> {
                         controller: _subtitleController,
                         onChanged: (val) {
                           if (_selectedIndexArticle < 0) return;
-                          setState(() => compendiumHolder
-                              .subCategories[_selectedIndexColumns]
-                              .categoryArticles[_selectedIndexArticle]
-                              .subtitle = val);
+                          setState(() => campaignHolder
+                              .maps[_selectedIndexColumns]
+                              .nationMaps[_selectedIndexArticle]
+                              .mapID = val);
                         },
                       )),
                       SizedBox(
@@ -278,41 +300,6 @@ class _CompendiumManager extends State<CompendiumManager> {
                     ),
                   ]),
                 ),
-                SizedBox(
-                  height: 75,
-                  width: 450,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          flex: 2,
-                          child: Text(
-                            "Image",
-                            textAlign: TextAlign.left,
-                            textScaleFactor: 1.5,
-                          )),
-                      Expanded(
-                          flex: 6,
-                          child: DropdownButtonFormField(
-                            value: dropdownValue,
-                            items: _returnDropdownItems(),
-                            onChanged: (String? newValue) {
-                              if (_selectedIndexArticle >= 0) {
-                                setState(() {
-                                  dropdownValue = newValue!;
-                                  compendiumHolder
-                                          .subCategories[_selectedIndexColumns]
-                                          .categoryArticles[_selectedIndexArticle]
-                                          .image =
-                                      compendiumImage.values.firstWhere(
-                                          (element) =>
-                                              element.name == newValue);
-                                });
-                              }
-                            },
-                          ))
-                    ],
-                  ),
-                )
               ],
             )),
         const Spacer(flex: 5),
@@ -324,40 +311,28 @@ class _CompendiumManager extends State<CompendiumManager> {
     if (_selectedIndexColumns < 0)
       return ListView(controller: ScrollController());
     return ListView.builder(
-        itemCount: compendiumHolder
-            .subCategories[_selectedIndexColumns].categoryArticles.length,
+        itemCount: campaignHolder.maps[_selectedIndexColumns].nationMaps.length,
         scrollDirection: Axis.vertical,
         controller: ScrollController(),
         itemBuilder: (context, index) => ListTile(
-              title: Text(compendiumHolder.subCategories[_selectedIndexColumns]
-                  .categoryArticles[index].title),
+              title: Text(campaignHolder
+                  .maps[_selectedIndexColumns].nationMaps[index].title),
               selected: _selectedIndexArticle == index,
               onTap: () {
                 setState(() {
                   _selectedIndexArticle = index;
-                  _titleController.text = compendiumHolder
-                      .subCategories[_selectedIndexColumns]
-                      .categoryArticles[index]
-                      .title;
-                  _subtitleController.text = compendiumHolder
-                      .subCategories[_selectedIndexColumns]
-                      .categoryArticles[index]
-                      .subtitle;
-                  var desc = compendiumHolder
-                      .subCategories[_selectedIndexColumns]
-                      .categoryArticles[index]
-                      .description;
+                  _titleController.text = campaignHolder
+                      .maps[_selectedIndexColumns].nationMaps[index].title;
+                  _subtitleController.text = campaignHolder
+                      .maps[_selectedIndexColumns].nationMaps[index].mapID;
+                  var desc = campaignHolder.maps[_selectedIndexColumns]
+                      .nationMaps[index].description;
                   //Swap text.
                   var newNotus = NotusDocument.fromDelta(Delta()
                     ..insert(
-                        "${compendiumHolder.subCategories[_selectedIndexColumns].categoryArticles[index].description}\n"));
+                        "${campaignHolder.maps[_selectedIndexColumns].nationMaps[index].description}\n"));
                   _zController = ZefyrController(newNotus);
                   _setZcontrollerEvent();
-                  dropdownValue = compendiumHolder
-                      .subCategories[_selectedIndexColumns]
-                      .categoryArticles[index]
-                      .image
-                      .name;
                 });
               },
             ));
@@ -365,8 +340,8 @@ class _CompendiumManager extends State<CompendiumManager> {
 
   void createCategory() {
     setState(() {
-      compendiumHolder.mainCategories.add(_temporaryTextCont.text);
-      compendiumHolder.subCategories.add(CompendiumCategory());
+      campaignHolder.nationNames.add(_temporaryTextCont.text);
+      campaignHolder.maps.add(Nation());
       resetIndices();
       _currentCategoryString = "";
     });
@@ -379,8 +354,8 @@ class _CompendiumManager extends State<CompendiumManager> {
 
   void removeCategory(int indexRemoval) {
     setState(() {
-      compendiumHolder.mainCategories.removeAt(indexRemoval);
-      compendiumHolder.subCategories.removeAt(indexRemoval);
+      campaignHolder.nationNames.removeAt(indexRemoval);
+      campaignHolder.maps.removeAt(indexRemoval);
       resetIndices();
       _currentCategoryString = "";
     });
@@ -389,9 +364,9 @@ class _CompendiumManager extends State<CompendiumManager> {
   void _setZcontrollerEvent() {
     _zController.document.changes.listen((event) {
       if (_selectedIndexArticle >= 0) {
-        compendiumHolder
-            .subCategories[_selectedIndexColumns]
-            .categoryArticles[_selectedIndexArticle]
+        campaignHolder
+            .maps[_selectedIndexColumns]
+            .nationMaps[_selectedIndexArticle]
             .description = _zController.document.toPlainText();
       }
     });
@@ -400,37 +375,44 @@ class _CompendiumManager extends State<CompendiumManager> {
   void _createArticle() {
     if (_selectedIndexColumns < 0) return;
     setState(() {
-      compendiumHolder.subCategories[_selectedIndexColumns].categoryArticles
-          .add(CompendiumArticle.titleDefined(_temporaryTextCont.text));
+      campaignHolder.maps[_selectedIndexColumns].nationMaps
+          .add(GameMap.titleDefined(_temporaryTextCont.text));
     });
   }
 
-  CompendiumHolder _setCompendiumData(String gamePath) {
-    var testProvider = gamePath;
+  Campaign _setCampaignData() {
     var dataFile = File(filepath.join(
-        testProvider, "Assets", "Resources", "Compendium", "Compendium.json"));
+        gPath, "Assets", "Resources", "Campaign", "$_campaignTitle.json"));
     if (dataFile.existsSync()) {
-      return CompendiumHolder.fromJson(jsonDecode(dataFile.readAsStringSync()));
+      return jsonDecode(dataFile.readAsStringSync()) as Campaign;
     }
-    return CompendiumHolder();
+    return Campaign();
   }
 
-  List<DropdownMenuItem<String>> _returnDropdownItems() {
+  void _saveJSON() {
+    var testProvider = widget.gamePath;
+    var dataFile = File(filepath.join(testProvider, "Assets", "Resources",
+        "Campaign", "$_campaignTitle.json"));
+    var results = jsonEncode(campaignHolder);
+    dataFile.writeAsStringSync(results);
+  }
+
+  void _SaveThenLoadOtherJSON() {
+    _saveJSON();
+    setState(() {
+      _campaignTitle = _temporaryTextCont.text;
+      _setCampaignData();
+    });
+  }
+
+  List<DropdownMenuItem<String>>? _getCampaigns() {
     List<String> compendiumItemList =
-        compendiumImage.values.map<String>((e) => e.name).toList();
+        campaignID.values.map<String>((e) => e.name).toList();
     return compendiumItemList.map<DropdownMenuItem<String>>((String value) {
       return DropdownMenuItem<String>(
         value: value,
         child: Text(value),
       );
     }).toList();
-  }
-
-  void _saveJSON() {
-    var testProvider = widget.gamePath;
-    var dataFile = File(filepath.join(
-        testProvider, "Assets", "Resources", "Compendium", "Compendium.json"));
-    var results = jsonEncode(compendiumHolder);
-    dataFile.writeAsStringSync(results);
   }
 }

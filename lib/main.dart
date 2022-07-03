@@ -8,6 +8,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sk_flutter/compendiummanager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'chaptermanager.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
@@ -192,12 +194,17 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                       ListTile(
                           leading: const Icon(Icons.map),
-                          title: const Text('Map Manager'),
-                          onTap: () {}),
+                          title: const Text('Campaign Manager'),
+                          onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => CampaignManager(
+                                      gamePath: projectLocation!,
+                                      gameID: projectData['cornerID'])))),
                       ListTile(
                           leading: const Icon(Icons.person),
-                          title: const Text('Character Desc. Manager'),
-                          onTap: () => {})
+                          title: const Text('Map Manager'),
+                          onTap: () {})
                     ],
                   ),
                   Column(
